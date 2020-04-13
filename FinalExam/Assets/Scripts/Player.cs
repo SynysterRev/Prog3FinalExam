@@ -2,11 +2,13 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Die : MonoBehaviour
+public class Player : MonoBehaviour
 {
-    int idPlayer;
-    Face[] faces = new Face[6];
-    bool isLocked;
+    [SerializeField] GameObject prefabDie;
+    Die[] dices = new Die[6];
+    GameObject piece;
+    int IDCurrentRoom;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -18,10 +20,4 @@ public class Die : MonoBehaviour
     {
         
     }
-}
-
-public class Face
-{
-   public Ressources typeSupplieFace;
-   public bool isTrash;
 }

@@ -4,12 +4,22 @@ using UnityEngine;
 
 public class BoardGame : MonoBehaviour
 {
-    CitiesDataBase cities;
     [SerializeField] Room[] rooms;
+    CitiesDataBase cities;
+    [SerializeField] GameObject prefabPlane;
+    [SerializeField] GameObject prefabPlayer;
+    GameObject plane;
+    float timerRound;
+    int numberPieceTimerLeft;
+
+    void InitializeBoard()
+    {
+
+    }
     // Start is called before the first frame update
     void Start()
     {
-        
+        InitializeBoard();
     }
 
     // Update is called once per frame
