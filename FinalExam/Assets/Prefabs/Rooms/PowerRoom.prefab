@@ -1,0 +1,100 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6156931123105463753
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6156931123105463766}
+  - component: {fileID: 6156931123105463764}
+  - component: {fileID: 6156931123105463767}
+  m_Layer: 0
+  m_Name: PowerRoom
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6156931123105463766
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6156931123105463753}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10.5, y: 1.45, z: -3.77}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6156931123105463764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6156931123105463753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8d7b98a9f38114aa01349aac70a374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  supplyPrefab: {fileID: 4730680416236677736, guid: fec9451eaacb66040954ec55b704c05e,
+    type: 3}
+  idRoom: 3
+  nameRoom: PowerRoom
+  typeSupply: 4
+  positionPlayer:
+  - {fileID: 0}
+  - {fileID: 0}
+  positionRessources:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  positionDices:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  RessourcesRequired:
+  - numberRessourcesRequired: 3
+    numberRessourcesReward: 1
+    isCompleted: 0
+  - numberRessourcesRequired: 1
+    numberRessourcesReward: 2
+    isCompleted: 0
+  - numberRessourcesRequired: 1
+    numberRessourcesReward: 3
+    isCompleted: 0
+  lockedDice:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  IDNeighbourRoom: 010000000200000004000000
+  ressourcesHold: 
+  isHold: 0
+  isWaste: 0
+  numberWaste: 0
+  supplies: []
+--- !u!65 &6156931123105463767
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6156931123105463753}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 12, y: 1, z: 7}
+  m_Center: {x: 0, y: 0, z: 0}

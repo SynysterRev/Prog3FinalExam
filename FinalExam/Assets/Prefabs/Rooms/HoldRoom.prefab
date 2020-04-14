@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1076842398036068060
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1076842398036068061}
+  - component: {fileID: 1076842398036068063}
+  - component: {fileID: 1076842398036068062}
+  m_Layer: 0
+  m_Name: HoldRoom
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1076842398036068061
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1076842398036068060}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
+  m_LocalPosition: {x: -31.08, y: 1.45, z: 0.13}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!114 &1076842398036068063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1076842398036068060}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8d7b98a9f38114aa01349aac70a374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  supplyPrefab: {fileID: 4730680416236677736, guid: fec9451eaacb66040954ec55b704c05e,
+    type: 3}
+  idRoom: 0
+  nameRoom: HoldRoom
+  typeSupply: -1
+  positionPlayer:
+  - {fileID: 0}
+  - {fileID: 0}
+  positionRessources:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  positionDices:
+  - {fileID: 0}
+  RessourcesRequired: []
+  lockedDice:
+  - {fileID: 0}
+  IDNeighbourRoom: 01000000
+  ressourcesHold: 000000000000000000000000000000000000000000000000000000000000000000000000
+  isHold: 1
+  isWaste: 0
+  numberWaste: 0
+  supplies: []
+--- !u!65 &1076842398036068062
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1076842398036068060}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Size: {x: 15, y: 1, z: 4}
+  m_Center: {x: 0, y: 0, z: 0}

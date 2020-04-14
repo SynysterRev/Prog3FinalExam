@@ -2,17 +2,14 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Card : MonoBehaviour
 {
-    [SerializeField] GameObject prefabDie;
-    Die[] dices = new Die[6];
-    GameObject piece;
-    int IDCurrentRoom;
-
+    public CityInfo cityInfo;
+    public int IDCard;
     // Start is called before the first frame update
     void Start()
     {
-        
+        cityInfo = CitiesDataBase.Cities[IDCard];
     }
 
     // Update is called once per frame

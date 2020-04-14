@@ -4,12 +4,9 @@ using UnityEngine;
 
 public class CitiesDataBase
 {
-    CityInfo[] Cities;
-    public CitiesDataBase()
+    public static CityInfo[] Cities = new CityInfo[24]
     {
-        Cities = new CityInfo[24]
-        {
-         new CityInfo("Tokyo", new Ressources[]{Ressources.firstAid, Ressources.firstAid, Ressources.food, Ressources.food} ),
+          new CityInfo("Tokyo", new Ressources[]{Ressources.firstAid, Ressources.firstAid, Ressources.food, Ressources.food} ),
          new CityInfo("Seoul", new Ressources[]{Ressources.food, Ressources.food, Ressources.power, Ressources.power } ),
          new CityInfo("HongKong", new Ressources[]{Ressources.water, Ressources.water, Ressources.food, Ressources.food} ),
          new CityInfo("Bangkok", new Ressources[]{Ressources.power, Ressources.power, Ressources.firstAid, Ressources.firstAid } ),
@@ -33,6 +30,5 @@ public class CitiesDataBase
          new CityInfo("Johannesburg", new Ressources[]{Ressources.vaccine, Ressources.vaccine, Ressources.food, Ressources.power} ),
          new CityInfo("Sydney", new Ressources[]{Ressources.firstAid, Ressources.firstAid, Ressources.vaccine, Ressources.food} ),
          new CityInfo("Manila", new Ressources[]{Ressources.vaccine, Ressources.vaccine, Ressources.water, Ressources.water} ),
-        };
-    }
+    };
 }

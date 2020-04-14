@@ -4,11 +4,12 @@ using UnityEngine;
 
 public enum Ressources
 {
-    none,
+    none = -1,
     food,
     water,
     firstAid,
     vaccine,
     power,
-    plane
+    plane,
+    total
 }
