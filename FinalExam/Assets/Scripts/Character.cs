@@ -22,6 +22,7 @@ public class Character : MonoBehaviour
     int IDCurrentRoom;
     bool isMyTurn;
     int id;
+    int numberRoll;
 
     public void Initialize(Vector3 _position)
     {
@@ -29,38 +30,65 @@ public class Character : MonoBehaviour
         IDCurrentRoom = idRoomSpawn;
         isMyTurn = false;
         numberDiceToRoll = 6;
+        numberRoll = 3;
     }
 
-    public void RollDice()
+    public bool RollDice()
     {
-        DeleteNotLockedDice();
-        GameObject go;
-        Vector3 position = Vector3.zero + Vector3.up * 4.0f;
-        position.x = Random.Range(-20.0f, 20.0f);
-        position.z = Random.Range(-5.0f, 5.0f);
-        for (int i = dice.Count; i < dice.Count + numberDiceToRoll; ++i)
+        if (isMyTurn && numberRoll > 0)
         {
-            go = Instantiate(prefabDie, position, Quaternion.identity);
-            if (go.GetComponent<Die>())
-            {
-                dice.Add(go.GetComponent<Die>());
-                dice[i].Initialize(id);
-            }
+            DeleteNotLockedDice();
+            GameObject go;
+            Vector3 position = Vector3.zero + Vector3.up * 4.0f;
             position.x = Random.Range(-20.0f, 20.0f);
             position.z = Random.Range(-5.0f, 5.0f);
+            int totalDice = dice.Count;
+            for (int i = totalDice; i < (totalDice + numberDiceToRoll); ++i)
+            {
+                go = Instantiate(prefabDie, position, Quaternion.identity);
+                if (go.GetComponent<Die>())
+                {
+                    dice.Add(go.GetComponent<Die>());
+                    dice[i].Initialize(id);
+                }
+                position.x = Random.Range(-20.0f, 20.0f);
+                position.z = Random.Range(-5.0f, 5.0f);
+            }
+            numberRoll--;
+            return numberRoll > 0;
         }
+        return false;
     }
 
     void DeleteNotLockedDice()
     {
         for (int i = 0; i < dice.Count; ++i)
         {
-            if(!dice[i].isLocked)
+            if (!dice[i].isLocked)
             {
                 GameObject go = dice[i].gameObject;
                 dice.RemoveAt(i);
                 Destroy(go);
+                i--;
             }
+        }
+    }
+
+    public void EndTurn()
+    {
+        if (isMyTurn)
+        {
+            isMyTurn = false;
+            DeleteNotLockedDice();
+            numberRoll = 3;
+        }
+    }
+
+    public void ActivateTurn()
+    {
+        if (!isMyTurn)
+        {
+            isMyTurn = true;
         }
     }
 
@@ -72,10 +100,7 @@ public class Character : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.K))
-        {
-            RollDice();
-        }
+
     }
 }
 

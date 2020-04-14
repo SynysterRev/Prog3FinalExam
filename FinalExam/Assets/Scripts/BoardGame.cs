@@ -4,6 +4,18 @@ using UnityEngine;
 
 public class BoardGame : MonoBehaviour
 {
+    public delegate void DelegatePauseGame();
+    public event DelegatePauseGame OnPauseGame;
+    public event DelegatePauseGame OnEndPauseGame;
+
+    public delegate void DelegateTimeUp();
+    public event DelegateTimeUp OnTimeUp;
+    public event DelegateTimeUp OnTimeUpEnd;
+
+    public delegate void DelegateEndGame();
+    public event DelegateEndGame OnGameOver;
+    public event DelegateEndGame OnGameWin;
+
     [SerializeField] Room[] rooms;
     [SerializeField] Transform[] citiesPosition;
     [SerializeField] GameObject prefabPlane;
@@ -13,6 +25,7 @@ public class BoardGame : MonoBehaviour
     [SerializeField] Transform pileOfCards;
     [SerializeField] GameObject cardPrefab;
     [SerializeField] Transform[] timeCoinPositions;
+    [SerializeField] float timePerRound;
     CityInfo[] cities;
     List<Card> cardsDeck;
     List<Card> citiesToSave;
@@ -21,9 +34,15 @@ public class BoardGame : MonoBehaviour
     Character[] players;
     int numberPlayers = 2;
     int numberCitiesToSave = 5;
-    float timerRound;
-    int numberPieceTimerLeft;
+    public float timerRound;
+    int numberCoinTimerLeft;
     int idCharacterTurn;
+    bool isGamePaused;
+    bool timeUp;
+    bool isGameOver;
+    bool isGameWin;
+
+    public bool TimeUp { get => timeUp; }
 
     void InitializeBoard()
     {
@@ -31,12 +50,14 @@ public class BoardGame : MonoBehaviour
         CreatePlayer();
 
         coinTime = new GameObject[9];
-        timerRound = 2.0f;
-        numberPieceTimerLeft = 3;
-        for (int i = 0; i < numberPieceTimerLeft; ++i)
+        timerRound = timePerRound;
+        numberCoinTimerLeft = 3;
+        for (int i = 0; i < numberCoinTimerLeft; ++i)
         {
             coinTime[i] = Instantiate(coinTimePrefab, timeCoinPositions[i].position, Quaternion.identity);
         }
+        isGamePaused = false;
+        timeUp = false;
     }
 
     void CreatePlayer()
@@ -58,6 +79,7 @@ public class BoardGame : MonoBehaviour
             prefabPlayer.RemoveAt(randomCharacter[i]);
         }
         idCharacterTurn = numberPlayers - 1;
+        players[idCharacterTurn].ActivateTurn();
     }
 
     void CreateCardDeck()
@@ -109,9 +131,18 @@ public class BoardGame : MonoBehaviour
         }
     }
 
-    public void RollDice()
+    public bool RollDice()
     {
-        players[idCharacterTurn].RollDice();
+        return players[idCharacterTurn].RollDice();
+    }
+
+    public void EndTurn()
+    {
+        players[idCharacterTurn].EndTurn();
+        idCharacterTurn--;
+        if (idCharacterTurn < 0)
+            idCharacterTurn = numberPlayers - 1;
+        players[idCharacterTurn].ActivateTurn();
     }
 
     // Start is called before the first frame update
@@ -120,9 +151,40 @@ public class BoardGame : MonoBehaviour
         InitializeBoard();
     }
 
+    public void UseCoinTime()
+    {
+        if (timeUp)
+        {
+            if (numberCoinTimerLeft > 0)
+            {
+                Destroy(coinTime[numberCoinTimerLeft - 1]);
+                numberCoinTimerLeft--;
+                timerRound = timePerRound;
+                OnTimeUpEnd();
+                timeUp = false;
+            }
+        }
+    }
+
     // Update is called once per frame
     void Update()
     {
-
+        if (!timeUp && !isGamePaused)
+        {
+            timerRound = Mathf.Clamp(timerRound - Time.deltaTime, 0.0f, 120.0f);
+            if (timerRound <= 0.0f)
+            {
+                if (numberCoinTimerLeft > 0)
+                {
+                    timeUp = true;
+                    OnTimeUp();
+                }
+                else
+                {
+                    isGameOver = true;
+                    OnGameOver();
+                }
+            }
+        }
     }
 }
