@@ -5,11 +5,17 @@ using UnityEngine;
 public class CityInfo
 {
     string cityName;
-    Ressources[] RessourcesNeeded = new Ressources[4];
+    Ressources[] ressourcesNeeded = new Ressources[4];
+    ColorCity colorCity;
 
-    public CityInfo(string _name, Ressources[] _RessourcesNeeded)
+    public CityInfo(string _name, Ressources[] _RessourcesNeeded, ColorCity _colorCity)
     {
         cityName = _name;
-        RessourcesNeeded = _RessourcesNeeded;
+        ressourcesNeeded = _RessourcesNeeded;
+        colorCity = _colorCity;
     }
+
+    public string CityName { get => cityName; }
+    public Ressources[] RessourcesNeeded { get => ressourcesNeeded; }
+    public ColorCity ColorCity { get => colorCity; }
 }

@@ -13,3 +13,11 @@ public enum Ressources
     plane,
     total
 }
+
+public enum ColorCity
+{
+    red,
+    blue,
+    grey,
+    yellow
+}

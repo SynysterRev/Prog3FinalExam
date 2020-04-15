@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2788775762988049624
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2788775762988049630}
+  - component: {fileID: 2788775762988049631}
+  m_Layer: 0
+  m_Name: SpriteManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2788775762988049630
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2788775762988049624}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.40379, y: 7.7673407, z: -7.2422175}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2788775762988049631
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2788775762988049624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31caf45468785584398cdce3a629044c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  matCard:
+  - {fileID: 2100000, guid: 705403520b2c4bb4188f602e51643d62, type: 2}
+  - {fileID: 2100000, guid: a5beda9264ff18843a213a4c09db1e11, type: 2}
+  - {fileID: 2100000, guid: 2644b5d9de3cec14b96ab907986bcb5f, type: 2}
+  - {fileID: 2100000, guid: 33204fbaf76d1b54bbba5ff116cda56f, type: 2}
+  suppliesSprite:
+  - {fileID: 21300000, guid: d20bf37dbce18a5428d2b003f978fa6d, type: 3}
+  - {fileID: 21300000, guid: 2769ef671941d1e49aa7550ec8df0e37, type: 3}
+  - {fileID: 21300000, guid: cc1b4bafe9980cf42916356bc45ffea4, type: 3}
+  - {fileID: 21300000, guid: dfc3ba7cb4069f143bf295c269434fdf, type: 3}
+  - {fileID: 21300000, guid: d0ca14f5083794f4fb82ade213308ab8, type: 3}

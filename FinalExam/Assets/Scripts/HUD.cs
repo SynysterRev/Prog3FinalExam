@@ -9,6 +9,7 @@ public class HUD : MonoBehaviour
     [SerializeField] Button nextTurn;
     [SerializeField] Button coinTime;
     [SerializeField] Text timer;
+    [SerializeField] Text playerTurn;
     BoardGame board;
     bool canRollDice;
     // Start is called before the first frame update
@@ -24,6 +25,22 @@ public class HUD : MonoBehaviour
         board.OnGameOver += OnPauseGame;
         coinTime.interactable = false;
         canRollDice = true;
+        playerTurn.text = board.GetCharacterColor().ToString() + " player";
+        switch(board.GetCharacterColor())
+        {
+            case ColorCharacter.green:
+                playerTurn.color = Color.green;
+                break;
+            case ColorCharacter.grey:
+                playerTurn.color = Color.grey;
+                break;
+            case ColorCharacter.red:
+                playerTurn.color = Color.red;
+                break;
+            case ColorCharacter.blue:
+                playerTurn.color = Color.blue;
+                break;
+        }   
     }
 
     // Update is called once per frame
@@ -39,6 +56,22 @@ public class HUD : MonoBehaviour
             board.EndTurn();
             canRollDice = true;
             rollDice.interactable = true;
+            playerTurn.text = board.GetCharacterColor().ToString() + " player";
+            switch (board.GetCharacterColor())
+            {
+                case ColorCharacter.green:
+                    playerTurn.color = Color.green;
+                    break;
+                case ColorCharacter.grey:
+                    playerTurn.color = Color.grey;
+                    break;
+                case ColorCharacter.red:
+                    playerTurn.color = Color.red;
+                    break;
+                case ColorCharacter.blue:
+                    playerTurn.color = Color.blue;
+                    break;
+            }
         }
     }
 

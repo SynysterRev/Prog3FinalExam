@@ -16,7 +16,7 @@ public class BoardGame : MonoBehaviour
     public event DelegateEndGame OnGameOver;
     public event DelegateEndGame OnGameWin;
 
-    [SerializeField] Room[] rooms;
+    [SerializeField] public Room[] rooms;
     [SerializeField] Transform[] citiesPosition;
     [SerializeField] GameObject prefabPlane;
     [SerializeField] GameObject coinTimePrefab;
@@ -25,13 +25,17 @@ public class BoardGame : MonoBehaviour
     [SerializeField] Transform pileOfCards;
     [SerializeField] GameObject cardPrefab;
     [SerializeField] Transform[] timeCoinPositions;
+    [SerializeField] Transform[] UsedDiePositions;
     [SerializeField] float timePerRound;
+    [SerializeField] int holdRoomID;
+
     CityInfo[] cities;
     List<Card> cardsDeck;
     List<Card> citiesToSave;
     GameObject[] coinTime;
     GameObject plane;
     Character[] players;
+
     int numberPlayers = 2;
     int numberCitiesToSave = 5;
     public float timerRound;
@@ -74,7 +78,7 @@ public class BoardGame : MonoBehaviour
             {
                 players[i] = go.GetComponent<Character>();
                 //spawn character at the correct place
-                players[i].Initialize(rooms[players[i].idRoomSpawn].positionPlayer[i].position);
+                players[i].Initialize(rooms[players[i].idRoomSpawn].positionPlayer[i].position, this, i, UsedDiePositions);
             }
             prefabPlayer.RemoveAt(randomCharacter[i]);
         }
@@ -126,7 +130,7 @@ public class BoardGame : MonoBehaviour
         for (int i = 2; i < 5; ++i)
         {
             citiesToSave[i].transform.position = position;
-            position.y += 0.1f;
+            position.y += 0.2f;
             citiesToSave[i].transform.rotation = pileOfCards.rotation;
         }
     }
@@ -166,11 +170,35 @@ public class BoardGame : MonoBehaviour
         }
     }
 
+    public ColorCharacter GetCharacterColor()
+    {
+        return players[idCharacterTurn].ColorCharact;
+    }
+
     // Update is called once per frame
     void Update()
     {
         if (!timeUp && !isGamePaused)
         {
+            if (Input.GetMouseButtonDown(0) && players[idCharacterTurn].WantToMove)
+            {
+                RaycastHit hit;
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out hit))
+                {
+                    Room room = hit.collider.GetComponent<Room>();
+                    if(room && room.IsRoomNeighbour(players[idCharacterTurn].IDCurrentRoom)&& players[idCharacterTurn].IDCurrentRoom != room.idRoom)
+                    {
+                        players[idCharacterTurn].MovePlayer(room.positionPlayer[idCharacterTurn].position, room.idRoom);
+                    }
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.B))
+            {
+                List<Supply> supplies = rooms[players[idCharacterTurn].IDCurrentRoom].TransfertSuppliesToHold();
+                rooms[holdRoomID].AddSuppliesToHold(supplies);
+            }
             timerRound = Mathf.Clamp(timerRound - Time.deltaTime, 0.0f, 120.0f);
             if (timerRound <= 0.0f)
             {
