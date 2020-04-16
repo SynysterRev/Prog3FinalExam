@@ -136,9 +136,9 @@ public class Room : MonoBehaviour
 
     public bool IsDieLockHold()
     {
-        if(isHold)
+        if (isHold)
         {
-            if(lockedDice[0] != null && lockedDice[0].IsUpperFacePlane())
+            if (lockedDice[0] != null && lockedDice[0].IsUpperFacePlane())
             {
                 return true;
             }
@@ -165,7 +165,16 @@ public class Room : MonoBehaviour
 
     public List<Supply> TransfertSuppliesToHold()
     {
-        if (numberSuppliesTransferable == 0) return null;
+        if (numberSuppliesTransferable == 0)
+        {
+            for (int i = 0; i < numberDieLocked; ++i)
+            {
+                lockedDice[i].ReturnDieToOwner();
+                lockedDice[i] = null;
+                numberDieLocked = 0;
+            }
+            return null;
+        }
         List<Supply> suppliesList = new List<Supply>();
         if (!isHold)
         {
@@ -200,7 +209,7 @@ public class Room : MonoBehaviour
                 if (numberRessourcesHold < 9)
                 {
                     ressourcesHold[numberRessourcesHold] = suppliesList[i];
-                    suppliesList[i].transform.position = positionRessources[numberRessourcesHold].position;
+                    suppliesList[i].MoveSupply(positionRessources[numberRessourcesHold].position, true, false);
                     numberRessourcesHold++;
                 }
             }

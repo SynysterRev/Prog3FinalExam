@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class BoardGame : MonoBehaviour
 {
@@ -29,6 +30,8 @@ public class BoardGame : MonoBehaviour
     [SerializeField] float timePerRound;
     [SerializeField] int holdRoomID;
 
+    [SerializeField] GameObject HiddenCard;
+
     CityInfo[] cities;
     List<Card> cardsDeck;
     List<Card> citiesToSave;
@@ -49,6 +52,10 @@ public class BoardGame : MonoBehaviour
     bool timeUp;
     bool isGameOver;
     bool isGameWin;
+
+    bool lerpNeeded;
+    Vector3 nextPosition;
+    float timer;
 
     public bool TimeUp { get => timeUp; }
 
@@ -134,20 +141,25 @@ public class BoardGame : MonoBehaviour
         //put 2 cities on the board
         for (int i = 0; i < 2; ++i)
         {
-            citiesToSave[i].transform.position = cardsCitiesPosition[citiesToSave[i].IDCard].position;
+            citiesToSave[i].MoveCard(cardsCitiesPosition[citiesToSave[i].IDCard].position);
+            //citiesToSave[i].transform.position = cardsCitiesPosition[citiesToSave[i].IDCard].position;
             citiesToSave[i].transform.rotation = cardsCitiesPosition[citiesToSave[i].IDCard].rotation;
             currentCitiesToSave.Add(citiesToSave[i]);
             citiesToSave.RemoveAt(i);
         }
 
+        GameObject go = Instantiate(HiddenCard);
         //put the 3 others in the draw pile
         Vector3 position = pileOfCards.position;
         for (int i = 0; i < 3; ++i)
         {
-            citiesToSave[i].transform.position = position;
+            citiesToSave[i].MoveCard(position);
             position.y += 0.2f;
             citiesToSave[i].transform.rotation = pileOfCards.rotation;
         }
+        position.y += 0.2f;
+        go.transform.position = position;
+        go.transform.rotation = pileOfCards.rotation;
     }
 
     public bool RollDice()
@@ -202,10 +214,20 @@ public class BoardGame : MonoBehaviour
                 Destroy(go);
             }
         }
-        citiesToSave[0].transform.position = cardsCitiesPosition[citiesToSave[0].IDCard].position;
-        citiesToSave[0].transform.rotation = cardsCitiesPosition[citiesToSave[0].IDCard].rotation;
-        currentCitiesToSave.Add(citiesToSave[0]);
-        citiesToSave.RemoveAt(0);
+        if (citiesToSave.Count > 0)
+        {
+            citiesToSave[0].MoveCard(cardsCitiesPosition[citiesToSave[0].IDCard].position);
+            citiesToSave[0].transform.rotation = cardsCitiesPosition[citiesToSave[0].IDCard].rotation;
+            currentCitiesToSave.Add(citiesToSave[0]);
+            citiesToSave.RemoveAt(0);
+        }
+
+        if (citiesToSave.Count == 0 && currentCitiesToSave.Count == 0)
+        {
+            timeUp = true;
+            isGameWin = true;
+            OnGameWin();
+        }
     }
 
     public ColorCharacter GetCharacterColor()
@@ -223,10 +245,32 @@ public class BoardGame : MonoBehaviour
         return false;
     }
 
+    public void RestartGame()
+    {
+        SceneManager.LoadScene("GameScene");
+    }
+
     // Update is called once per frame
     void Update()
     {
-        if (!timeUp && !isGamePaused)
+        if (lerpNeeded)
+        {
+            timer += Time.deltaTime;
+            plane.transform.position = Vector3.Lerp(plane.transform.position, nextPosition, timer);
+            if (timer >= 1.0f)
+            {
+                lerpNeeded = false;
+                timer = 0.0f;
+            }
+        }
+
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            citiesToSave.Clear();
+            currentCitiesToSave.Clear();
+            DeleteSavedCityAndAddNewOne();
+        }
+        if (!timeUp && !isGamePaused && !isGameOver)
         {
             if (Input.GetMouseButtonDown(0) && players[idCharacterTurn].WantToMove)
             {
@@ -246,7 +290,9 @@ public class BoardGame : MonoBehaviour
             {
                 if (planeCity == 0) planeCity = citiesPosition.Length - 1;
                 else planeCity--;
-                plane.transform.position = citiesPosition[planeCity].position;
+                lerpNeeded = true;
+                //plane.transform.position = citiesPosition[planeCity].position;
+                nextPosition = citiesPosition[planeCity].position;
                 plane.transform.rotation = citiesPosition[planeCity].rotation;
                 cityPlane = cities[planeCity];
                 players[idCharacterTurn].DeleteDiceUsedToMovePlane();
@@ -256,13 +302,15 @@ public class BoardGame : MonoBehaviour
             {
                 if (planeCity == citiesPosition.Length - 1) planeCity = 0;
                 else planeCity++;
-                plane.transform.position = citiesPosition[planeCity].position;
+                lerpNeeded = true;
+                nextPosition = citiesPosition[planeCity].position;
+               // plane.transform.position = citiesPosition[planeCity].position;
                 plane.transform.rotation = citiesPosition[planeCity].rotation;
                 cityPlane = cities[planeCity];
                 players[idCharacterTurn].DeleteDiceUsedToMovePlane();
             }
 
-            if (Input.GetKeyDown(KeyCode.B))
+            if (Input.GetKeyDown(KeyCode.Return) && !players[idCharacterTurn].IsDieInSupplyList())
             {
                 if (!rooms[players[idCharacterTurn].IDCurrentRoom].isHold)
                 {
@@ -288,6 +336,7 @@ public class BoardGame : MonoBehaviour
                 }
                 else
                 {
+                    timeUp = true;
                     isGameOver = true;
                     OnGameOver();
                 }

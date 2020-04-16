@@ -10,6 +10,10 @@ public class Supply : MonoBehaviour
     public int IDSpawningRoom;
     public bool IsInTheHold = false;
     int idPlaceInRoom;
+
+    bool lerpNeeded;
+    Vector3 nextPosition;
+    float timer;
     // Start is called before the first frame update
 
     public Ressources TypeSupply { get => typeSupply; }
@@ -26,10 +30,13 @@ public class Supply : MonoBehaviour
     public void MoveSupply(Vector3 _position, bool _toHold, bool _toSpawningRoom)
     {
         IsInTheHold = _toHold;
-        transform.position = _position;
+        nextPosition = _position;
+        lerpNeeded = true;
+        //transform.position = _position;
         if (_toSpawningRoom)
         {
-            transform.position = spawningRoom.positionRessources[idPlaceInRoom].position;
+            nextPosition = spawningRoom.positionRessources[idPlaceInRoom].position;
+            //transform.position = spawningRoom.positionRessources[idPlaceInRoom].position;
         }
     }
 
@@ -41,6 +48,15 @@ public class Supply : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
+        if (lerpNeeded)
+        {
+            timer += Time.deltaTime * 5.0f;
+            transform.position = Vector3.Lerp(transform.position, nextPosition, timer);
+            if (timer >= 1.0f)
+            {
+                lerpNeeded = false;
+                timer = 0.0f;
+            }
+        }
     }
 }

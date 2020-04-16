@@ -42,7 +42,12 @@ public class Character : MonoBehaviour
     int numberRoll;
     int numberDieUsed;
 
+    bool lerpNeeded;
+    Vector3 nextPosition;
+    float timer;
+
     bool canUseDiceForSupply;
+
 
     public ColorCharacter ColorCharact { get => colorCharact; }
 
@@ -150,24 +155,6 @@ public class Character : MonoBehaviour
         }
     }
 
-    int GetUnusedID()
-    {
-        int id = 0;
-        for (int i = 0; i < IDAlreadyUsed.Length; ++i)
-        {
-            if (IDAlreadyUsed[i])
-            {
-                id++;
-            }
-            else
-            {
-                IDAlreadyUsed[i] = true;
-                return id;
-            }
-        }
-        return id;
-    }
-
     void DeleteNotUseDice()
     {
         Vector3 position = Vector3.zero + Vector3.up * 101.0f;
@@ -195,8 +182,13 @@ public class Character : MonoBehaviour
                     if (indexDieMove == -1)
                     {
                         indexDieMove = index;
+                        if (diceUsedOnSupply.Contains(dice[indexDieMove]))
+                        {
+                            dice[index].AddedToListToPossibleSupply(false);
+                            diceUsedOnSupply.Remove(dice[index]);
+                        }
                         WantToMove = dice[index].UseForMovement(false);
-                        Debug.Log(WantToMove);
+                            Debug.Log(WantToMove);
                     }
                     else if (indexDieMove == index)
                     {
@@ -221,6 +213,11 @@ public class Character : MonoBehaviour
                     if (indexDieMove == -1)
                     {
                         indexDieMove = index;
+                        if (diceUsedOnSupply.Contains(dice[indexDieMove]))
+                        {
+                            dice[index].AddedToListToPossibleSupply(false);
+                            diceUsedOnSupply.Remove(dice[index]);
+                        }
                         WantToMovePlane = dice[index].UseForMovement(true);
                         Debug.Log(WantToMovePlane);
                     }
@@ -293,11 +290,17 @@ public class Character : MonoBehaviour
         }
     }
 
+    public bool IsDieInSupplyList()
+    {
+        return diceUsedOnSupply.Count > 0;
+    }
     public void MovePlayer(Vector3 _position, int _idRoom)
     {
         if (WantToMove)
         {
-            transform.position = _position;
+            nextPosition = _position;
+            lerpNeeded = true;
+            //transform.position = _position;
             WantToMove = false;
             dice[indexDieMove].gameObject.layer = 2;
             dice[indexDieMove].ReturnDieToOwner();
@@ -318,8 +321,6 @@ public class Character : MonoBehaviour
             indexDieMove = -1;
         }
     }
-
-    // public void MovePlane()
 
     void MoveDieOutOfBoard(int _idDie)
     {
@@ -356,7 +357,18 @@ public class Character : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (isMyTurn)
+        if(lerpNeeded)
+        {
+            timer += Time.deltaTime * 5.0f;
+            transform.position = Vector3.Lerp(transform.position, nextPosition, timer);
+            if (timer >= 1.0f)
+            {
+                lerpNeeded = false;
+                timer = 0.0f;
+            }
+        }
+
+        if (isMyTurn && !board.TimeUp)
         {
             DiceManagement();
         }

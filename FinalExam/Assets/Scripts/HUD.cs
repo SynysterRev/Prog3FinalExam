@@ -8,8 +8,14 @@ public class HUD : MonoBehaviour
     [SerializeField] Button rollDice;
     [SerializeField] Button nextTurn;
     [SerializeField] Button coinTime;
+    [SerializeField] Button Restart;
     [SerializeField] Text timer;
     [SerializeField] Text playerTurn;
+    [SerializeField] Text endText;
+    [SerializeField] GameObject game;
+    [SerializeField] GameObject gameOver;
+    [SerializeField] GameObject gameWin;
+
     BoardGame board;
     bool canRollDice;
     // Start is called before the first frame update
@@ -22,7 +28,9 @@ public class HUD : MonoBehaviour
         board.OnTimeUp += OnTimeUp;
         board.OnTimeUpEnd += OnTimeUpEnd;
 
-        board.OnGameOver += OnPauseGame;
+        board.OnGameOver += OnGameOver;
+        board.OnGameWin += OnGameWin;
+
         coinTime.interactable = false;
         canRollDice = true;
         playerTurn.text = board.GetCharacterColor().ToString() + " player";
@@ -75,6 +83,11 @@ public class HUD : MonoBehaviour
         }
     }
 
+    public void RestartGame()
+    {
+        board.RestartGame();
+    }
+
     public void AskRollDice()
     {
         if (canRollDice && !board.TimeUp)
@@ -90,6 +103,30 @@ public class HUD : MonoBehaviour
         {
             board.UseCoinTime();
         }
+    }
+
+    void OnGameOver()
+    {
+        game.SetActive(false);
+        gameOver.SetActive(true);
+        endText.text = "GAME OVER !";
+        rollDice.interactable = false;
+        nextTurn.interactable = false;
+        coinTime.interactable = false;
+        Restart.interactable = true;
+        Restart.gameObject.SetActive(true);
+    }
+
+    void OnGameWin()
+    {
+        game.SetActive(false);
+        gameOver.SetActive(true);
+        endText.text = "CONGRATULATIONS !";
+        rollDice.interactable = false;
+        nextTurn.interactable = false;
+        coinTime.interactable = false;
+        Restart.interactable = true;
+        Restart.gameObject.SetActive(true);
     }
 
     void OnPauseGame()

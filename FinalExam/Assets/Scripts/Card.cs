@@ -8,6 +8,10 @@ public class Card : MonoBehaviour
     public int IDCard;
     [SerializeField] SpriteRenderer[] spriteSuppliesNeeded;
     [SerializeField] TextMesh[] nameCity;
+
+    bool lerpNeeded;
+    Vector3 nextPosition;
+    float timer;
     // Start is called before the first frame update
     void Start()
     {
@@ -23,9 +27,24 @@ public class Card : MonoBehaviour
             GetComponent<MeshRenderer>().material = SpriteManager.Instance.MatCard[(int)cityInfo.ColorCity];
     }
 
+    public void MoveCard(Vector3 _position)
+    {
+        nextPosition = _position;
+        lerpNeeded = true;
+    }
+
     // Update is called once per frame
     void Update()
     {
-
+        if (lerpNeeded)
+        {
+            timer += Time.deltaTime * 5.0f;
+            transform.position = Vector3.Lerp(transform.position, nextPosition, timer);
+            if (timer >= 1.0f)
+            {
+                lerpNeeded = false;
+                timer = 0.0f;
+            }
+        }
     }
 }

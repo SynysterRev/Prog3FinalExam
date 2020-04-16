@@ -36,6 +36,10 @@ public class Die : MonoBehaviour
 
     public int id;
 
+    bool lerpNeeded;
+    Vector3 nextPosition;
+    float timer;
+
     Dictionary<Direction, Vector3> directionFace = new Dictionary<Direction, Vector3>();
     Vector3 newPosition;
     // Start is called before the first frame update
@@ -48,27 +52,23 @@ public class Die : MonoBehaviour
         rgbd.isKinematic = true;
         upperFace = null;
         isAddedToList = false;
+        timer = 0.0f;
         outlineToChange = outlineCube.GetComponent<Renderer>().sharedMaterial = new Material(shader);
-        outlineToChange.SetFloat("_Thickness", 0.0f);
+        outlineCube.SetActive(false);
+        //outlineToChange.SetFloat("_Thickness", 0.0f);
     }
 
     public void RollDie(Vector3 _position)
     {
         ResetNoneSupplyDie(_position);
-        //outlineToChange.SetFloat("_Thickness", 0.0f);
-        gameObject.layer = 0;
+        gameObject.layer = 2;
         rgbd.isKinematic = false;
         int x = Random.Range(0, 11) % 2 == 0 ? 1 : -1;
         int z = Random.Range(0, 11) % 2 == 0 ? 1 : -1;
-       // transform.position = _position;
         Vector3 force = new Vector3(Random.Range(30.0f, 50.0f) * x, 0.0f, Random.Range(30.0f, 50.0f) * z);
         rgbd.AddForce(force, ForceMode.Impulse);
-       /* CanCheckFace = false;
-        upperFace = null;
-        HasBeenUsed = false;
-        isLocked = false;
-        isUseToMove = false;*/
-
+        Vector3 torque = new Vector3(Random.Range(30.0f, 50.0f) * x, Random.Range(30.0f, 50.0f), Random.Range(30.0f, 50.0f) * z);
+        rgbd.AddTorque(torque * 100.0f);
     }
     void Start()
     {
@@ -78,6 +78,17 @@ public class Die : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (lerpNeeded)
+        {
+            timer += Time.deltaTime * 5.0f;
+            transform.position = Vector3.Lerp(transform.position, nextPosition, timer);
+            if (timer >= 1.0f)
+            {
+                lerpNeeded = false;
+                timer = 0.0f;
+            }
+        }
+
         if (rgbd != null && rgbd.velocity.magnitude <= 0.1f && upperFace == null && CanCheckFace)
         {
             DetectUpperFace();
@@ -110,35 +121,69 @@ public class Die : MonoBehaviour
                 bestValue = kvp.Key;
             }
         }
-        if(bestDot > 0.5f)
+        if (bestDot > 0.5f)
         {
-            //Debug.Log()
             upperFace = faces[(int)bestValue];
+            Vector3 rot = transform.rotation.eulerAngles;
+            switch (bestValue)
+            {
+                case Direction.up:
+                    rot.x = 0.0f;
+                    rot.y = 180.0f;
+                    rot.z = 0.0f;
+                    break;
+                case Direction.down:
+                    rot.x = 180.0f;
+                    rot.y = 180.0f;
+                    rot.z = 0.0f;
+                    break;
+                case Direction.forward:
+                    rot.x = -90.0f;
+                    rot.y = 180.0f;
+                    rot.z = 0.0f;
+                    break;
+                case Direction.backward:
+                    rot.x = 90.0f;
+                    rot.y = 90.0f;
+                    rot.z = 90.0f;
+                    break;
+                case Direction.right:
+                    rot.x = 0.0f;
+                    rot.y = 0.0f;
+                    rot.z = 90.0f;
+                    break;
+                case Direction.left:
+                    rot.x = -180.0f;
+                    rot.y = 0.0f;
+                    rot.z = 90.0f;
+                    break;
+            }
+            transform.rotation = Quaternion.Euler(rot);
         }
-       /* if (transform.up == Vector3.up)
-        {
-            upperFace = faces[0];
-        }
-        else if (-transform.up == Vector3.up)
-        {
-            upperFace = faces[1];
-        }
-        else if (transform.forward == Vector3.up)
-        {
-            upperFace = faces[2];
-        }
-        else if (-transform.forward == Vector3.up)
-        {
-            upperFace = faces[3];
-        }
-        else if (transform.right == Vector3.up)
-        {
-            upperFace = faces[4];
-        }
-        else if (-transform.right == Vector3.up)
-        {
-            upperFace = faces[5];
-        }*/
+        /* if (transform.up == Vector3.up)
+         {
+             upperFace = faces[0];
+         }
+         else if (-transform.up == Vector3.up)
+         {
+             upperFace = faces[1];
+         }
+         else if (transform.forward == Vector3.up)
+         {
+             upperFace = faces[2];
+         }
+         else if (-transform.forward == Vector3.up)
+         {
+             upperFace = faces[3];
+         }
+         else if (transform.right == Vector3.up)
+         {
+             upperFace = faces[4];
+         }
+         else if (-transform.right == Vector3.up)
+         {
+             upperFace = faces[5];
+         }*/
         if (upperFace != null)
         {
             rgbd.isKinematic = true;
@@ -162,14 +207,16 @@ public class Die : MonoBehaviour
         if (!HasBeenUsed && !isAddedToList)
         {
             isLocked = !isLocked;
-            if(isLocked)
+            if (isLocked)
             {
-                outlineToChange.SetFloat("_Thickness", 4.0f);
+                outlineCube.SetActive(true);
+                //outlineToChange.SetFloat("_Thickness", 4.0f);
                 outlineToChange.SetColor("_Color", Color.red);
             }
             else
             {
-                outlineToChange.SetFloat("_Thickness", 0.0f);
+                outlineCube.SetActive(false);
+                //outlineToChange.SetFloat("_Thickness", 0.0f);
             }
         }
     }
@@ -181,7 +228,10 @@ public class Die : MonoBehaviour
         Vector3 rot = transform.rotation.eulerAngles;
         rot.y = 0.0f;
         transform.rotation = Quaternion.Euler(rot);
-        transform.position = _position;
+        lerpNeeded = true;
+        nextPosition = _position;
+        gameObject.layer = 0;
+        //transform.position = _position;
     }
 
     public void ResetNoneSupplyDie(Vector3 _position)
@@ -194,7 +244,8 @@ public class Die : MonoBehaviour
         CanCheckFace = false;
         upperFace = null;
         isAddedToList = false;
-        outlineToChange.SetFloat("_Thickness", 0.0f);
+        outlineCube.SetActive(false);
+        // outlineToChange.SetFloat("_Thickness", 0.0f);
         gameObject.layer = 2;
     }
 
@@ -204,12 +255,14 @@ public class Die : MonoBehaviour
         isLocked = false;
         if (_isAdded)
         {
-            outlineToChange.SetFloat("_Thickness", 4.0f);
+            outlineCube.SetActive(true);
+            //outlineToChange.SetFloat("_Thickness", 4.0f);
             outlineToChange.SetColor("_Color", Color.yellow);
         }
         else
         {
-            outlineToChange.SetFloat("_Thickness", 0.0f);
+            outlineCube.SetActive(false);
+            //outlineToChange.SetFloat("_Thickness", 0.0f);
         }
     }
 
@@ -219,7 +272,8 @@ public class Die : MonoBehaviour
         {
             if (_supplyNeeded == upperFace.typeSupplieFace)
             {
-                outlineToChange.SetFloat("_Thickness", 0.0f);
+                outlineCube.SetActive(false);
+                // outlineToChange.SetFloat("_Thickness", 0.0f);
                 isUseForSupply = true;
                 isLocked = true;
             }
@@ -231,19 +285,24 @@ public class Die : MonoBehaviour
         if (!HasBeenUsed)
         {
             isUseToMove = !isUseToMove;
-            if(isUseToMove && _isPlane)
+            isLocked = false;
+            isAddedToList = false;
+            if (isUseToMove && _isPlane)
             {
-                outlineToChange.SetFloat("_Thickness", 4.0f);
+                outlineCube.SetActive(true);
+                // outlineToChange.SetFloat("_Thickness", 4.0f);
                 outlineToChange.SetColor("_Color", Color.blue);
             }
-            else if(isUseToMove && !_isPlane)
+            else if (isUseToMove && !_isPlane)
             {
-                outlineToChange.SetFloat("_Thickness", 4.0f);
+                outlineCube.SetActive(true);
+                //outlineToChange.SetFloat("_Thickness", 4.0f);
                 outlineToChange.SetColor("_Color", Color.green);
             }
             else
             {
-                outlineToChange.SetFloat("_Thickness", 0.0f);
+                outlineCube.SetActive(false);
+                // outlineToChange.SetFloat("_Thickness", 0.0f);
             }
             return isUseToMove;
         }
