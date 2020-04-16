@@ -20,32 +20,55 @@ public class Die : MonoBehaviour
 
     int idCharacter;
     [SerializeField] Face[] faces = new Face[6];
+    [SerializeField] GameObject outlineCube;
+    Material outlineToChange;
+    [SerializeField] Shader shader;
+
     public bool isLocked;
     public bool isUseForSupply;
     public bool isUseToMove;
+    bool isAddedToList;
 
     public bool HasBeenUsed;
     Rigidbody rgbd;
     Face upperFace;
     bool CanCheckFace = false;
 
-    int id;
+    public int id;
 
+    Dictionary<Direction, Vector3> directionFace = new Dictionary<Direction, Vector3>();
     Vector3 newPosition;
     // Start is called before the first frame update
 
     public void Initialize(int _idCharacter, int _idDie)
     {
         rgbd = GetComponent<Rigidbody>();
+        idCharacter = _idCharacter;
+        id = _idDie;
+        rgbd.isKinematic = true;
+        upperFace = null;
+        isAddedToList = false;
+        outlineToChange = outlineCube.GetComponent<Renderer>().sharedMaterial = new Material(shader);
+        outlineToChange.SetFloat("_Thickness", 0.0f);
+    }
+
+    public void RollDie(Vector3 _position)
+    {
+        ResetNoneSupplyDie(_position);
+        //outlineToChange.SetFloat("_Thickness", 0.0f);
+        gameObject.layer = 0;
+        rgbd.isKinematic = false;
         int x = Random.Range(0, 11) % 2 == 0 ? 1 : -1;
         int z = Random.Range(0, 11) % 2 == 0 ? 1 : -1;
-        /*  Vector3 force = new Vector3(Random.Range(30.0f, 50.0f) * x, 0.0f, Random.Range(30.0f, 50.0f) * z);
-          rgbd.AddForce(force, ForceMode.Impulse);*/
-        idCharacter = _idCharacter;
+       // transform.position = _position;
+        Vector3 force = new Vector3(Random.Range(30.0f, 50.0f) * x, 0.0f, Random.Range(30.0f, 50.0f) * z);
+        rgbd.AddForce(force, ForceMode.Impulse);
+       /* CanCheckFace = false;
+        upperFace = null;
         HasBeenUsed = false;
         isLocked = false;
-        isUseToMove = false;
-        id = _idDie;
+        isUseToMove = false;*/
+
     }
     void Start()
     {
@@ -64,13 +87,35 @@ public class Die : MonoBehaviour
     public bool IsCorrectSupply(Ressources _supply)
     {
         if (upperFace == null) return false;
-        Debug.Log(upperFace.typeSupplieFace + " " + _supply);
         return upperFace.typeSupplieFace == _supply;
     }
 
     void DetectUpperFace()
     {
-        if (transform.up == Vector3.up)
+        float bestDot = -1.0f;
+        Direction bestValue = Direction.up;
+        directionFace.Clear();
+        directionFace.Add(Direction.up, transform.up);
+        directionFace.Add(Direction.down, -transform.up);
+        directionFace.Add(Direction.forward, transform.forward);
+        directionFace.Add(Direction.backward, -transform.forward);
+        directionFace.Add(Direction.right, transform.right);
+        directionFace.Add(Direction.left, -transform.right);
+        foreach (KeyValuePair<Direction, Vector3> kvp in directionFace)
+        {
+            float dot = Vector3.Dot(kvp.Value, Vector3.up);
+            if (dot > bestDot)
+            {
+                bestDot = dot;
+                bestValue = kvp.Key;
+            }
+        }
+        if(bestDot > 0.5f)
+        {
+            //Debug.Log()
+            upperFace = faces[(int)bestValue];
+        }
+       /* if (transform.up == Vector3.up)
         {
             upperFace = faces[0];
         }
@@ -93,7 +138,7 @@ public class Die : MonoBehaviour
         else if (-transform.right == Vector3.up)
         {
             upperFace = faces[5];
-        }
+        }*/
         if (upperFace != null)
         {
             rgbd.isKinematic = true;
@@ -103,11 +148,29 @@ public class Die : MonoBehaviour
         // Debug.Log(upperFace.typeSupplieFace);
     }
 
+    public bool IsUpperFacePlane()
+    {
+        if (upperFace != null)
+        {
+            return upperFace.typeSupplieFace == Ressources.plane;
+        }
+        return false;
+    }
     public void UnlockLockDice()
     {
-        if (!HasBeenUsed)
+        Debug.Log("locked");
+        if (!HasBeenUsed && !isAddedToList)
         {
             isLocked = !isLocked;
+            if(isLocked)
+            {
+                outlineToChange.SetFloat("_Thickness", 4.0f);
+                outlineToChange.SetColor("_Color", Color.red);
+            }
+            else
+            {
+                outlineToChange.SetFloat("_Thickness", 0.0f);
+            }
         }
     }
 
@@ -121,25 +184,67 @@ public class Die : MonoBehaviour
         transform.position = _position;
     }
 
+    public void ResetNoneSupplyDie(Vector3 _position)
+    {
+        transform.position = _position;
+        isLocked = false;
+        HasBeenUsed = false;
+        isUseToMove = false;
+        rgbd.isKinematic = true;
+        CanCheckFace = false;
+        upperFace = null;
+        isAddedToList = false;
+        outlineToChange.SetFloat("_Thickness", 0.0f);
+        gameObject.layer = 2;
+    }
+
+    public void AddedToListToPossibleSupply(bool _isAdded)
+    {
+        isAddedToList = _isAdded;
+        isLocked = false;
+        if (_isAdded)
+        {
+            outlineToChange.SetFloat("_Thickness", 4.0f);
+            outlineToChange.SetColor("_Color", Color.yellow);
+        }
+        else
+        {
+            outlineToChange.SetFloat("_Thickness", 0.0f);
+        }
+    }
+
     public void LockForSupply(Ressources _supplyNeeded)
     {
-        Debug.Log("in lock fuct");
         if (!HasBeenUsed)
         {
-            Debug.Log("locked");
             if (_supplyNeeded == upperFace.typeSupplieFace)
             {
+                outlineToChange.SetFloat("_Thickness", 0.0f);
                 isUseForSupply = true;
                 isLocked = true;
             }
         }
     }
 
-    public bool UseForMovement()
+    public bool UseForMovement(bool _isPlane)
     {
         if (!HasBeenUsed)
         {
             isUseToMove = !isUseToMove;
+            if(isUseToMove && _isPlane)
+            {
+                outlineToChange.SetFloat("_Thickness", 4.0f);
+                outlineToChange.SetColor("_Color", Color.blue);
+            }
+            else if(isUseToMove && !_isPlane)
+            {
+                outlineToChange.SetFloat("_Thickness", 4.0f);
+                outlineToChange.SetColor("_Color", Color.green);
+            }
+            else
+            {
+                outlineToChange.SetFloat("_Thickness", 0.0f);
+            }
             return isUseToMove;
         }
         return false;
@@ -149,10 +254,10 @@ public class Die : MonoBehaviour
     {
         isUseForSupply = false;
         isLocked = false;
+        isAddedToList = false;
         HasBeenUsed = true;
         transform.localScale = Vector3.one;
         transform.position = new Vector3(0.0f, 101.0f, 0.0f);
-        //Destroy(gameObject);
     }
 
     private void OnCollisionEnter(Collision collision)

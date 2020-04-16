@@ -28,7 +28,7 @@ public class Room : MonoBehaviour
 
     //"hold room"
     public bool isHold;
-    public Supply[] ressourcesHold = new Supply[9];
+    public Supply[] ressourcesHold;
     int numberRessourcesHold;
 
     GameObject wasteCoin;
@@ -36,7 +36,7 @@ public class Room : MonoBehaviour
 
     private void Start()
     {
-        if (typeSupply != Ressources.none)
+        if (typeSupply != Ressources.none && !isHold)
         {
             supplies = new Supply[4];
             GameObject go;
@@ -46,7 +46,7 @@ public class Room : MonoBehaviour
                 if (go.GetComponent<Supply>())
                 {
                     supplies[i] = go.GetComponent<Supply>();
-                    supplies[i].Initialize(idRoom, typeSupply);
+                    supplies[i].Initialize(idRoom, typeSupply, this, i);
                 }
             }
         }
@@ -56,6 +56,11 @@ public class Room : MonoBehaviour
             wasteCoin = Instantiate(supplyPrefab, positionRessources[0].position, Quaternion.identity);
         }
         numberDieLocked = 0;
+        numberRessourcesHold = 0;
+        if (isHold)
+        {
+            ressourcesHold = new Supply[9];
+        }
     }
 
     public bool HasEnoughRessources(int _numberOfRessources)
@@ -117,6 +122,30 @@ public class Room : MonoBehaviour
         }
     }
 
+    public void LockDieForHold(List<Die> _dieList)
+    {
+        if (_dieList.Count > 0)
+        {
+            _dieList[0].gameObject.layer = 2;
+            lockedDice[numberDieLocked] = _dieList[0];
+            _dieList[0].LockForSupply(typeSupply);
+            _dieList[0].MoveDice(positionDices[numberDieLocked].position, true);
+            numberDieLocked++;
+        }
+    }
+
+    public bool IsDieLockHold()
+    {
+        if(isHold)
+        {
+            if(lockedDice[0] != null && lockedDice[0].IsUpperFacePlane())
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int GetNumberSupplyAvailableForHold()
     {
         int number = 0;
@@ -176,6 +205,51 @@ public class Room : MonoBehaviour
                 }
             }
         }
+    }
+
+    public bool DeliverSupplies(Ressources[] _suppliesNeeded)
+    {
+        if (isHold)
+        {
+            bool[] supplyAlreadyUsed = new bool[9] { false, false, false, false, false, false, false, false, false };
+            bool[] CanBeDelivered = new bool[_suppliesNeeded.Length];
+            int[] idSupply = new int[_suppliesNeeded.Length];
+            for (int i = 0; i < CanBeDelivered.Length; ++i)
+                CanBeDelivered[i] = false;
+
+            for (int i = 0; i < _suppliesNeeded.Length; ++i)
+            {
+                for (int j = 0; j < ressourcesHold.Length; ++j)
+                {
+                    if (!supplyAlreadyUsed[j])
+                    {
+                        if (_suppliesNeeded[i] == ressourcesHold[j].TypeSupply)
+                        {
+                            CanBeDelivered[i] = true;
+                            supplyAlreadyUsed[j] = true;
+                            idSupply[i] = j;
+                            break;
+                        }
+                    }
+                }
+            }
+            for (int i = 0; i < CanBeDelivered.Length; ++i)
+                if (!CanBeDelivered[i]) return false;
+
+            for (int i = 0; i < idSupply.Length; ++i)
+            {
+                ressourcesHold[idSupply[i]].MoveSupply(Vector3.zero, false, true);
+                ressourcesHold[idSupply[i]] = null;
+            }
+            for (int i = 0; i < numberDieLocked; ++i)
+            {
+                lockedDice[i].ReturnDieToOwner();
+                lockedDice[i] = null;
+            }
+            numberDieLocked = 0;
+            return true;
+        }
+        return false;
     }
 
     public void AddDieLock(Die _lockedDie)

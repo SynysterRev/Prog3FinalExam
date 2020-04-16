@@ -12,7 +12,7 @@ public enum CharacterProfession
 
 public enum ColorCharacter
 {
-    green, 
+    green,
     grey,
     red,
     blue
@@ -31,10 +31,12 @@ public class Character : MonoBehaviour
     public CharacterProfession characterProfession;
     public int idRoomSpawn;
     public int IDCurrentRoom;
+    bool[] IDAlreadyUsed;
 
     Transform[] usedDiePositions;
     bool isMyTurn;
     public bool WantToMove;
+    public bool WantToMovePlane;
     int indexDieMove;
     int id;
     int numberRoll;
@@ -54,33 +56,78 @@ public class Character : MonoBehaviour
         board = _board;
         id = _id;
         indexDieMove = -1;
-        numberDieUsed = 0;
         usedDiePositions = _usedDiePositions;
         colorCharact = (ColorCharacter)characterProfession;
+        InitDice();
+        IDAlreadyUsed = new bool[6];
+        for (int i = 0; i < 6; ++i)
+        {
+            IDAlreadyUsed[i] = false;
+        }
+    }
+
+    /* public bool RollDice()
+     {
+         if (isMyTurn && numberRoll > 0)
+         {
+             DeleteNotLockedDice();
+             GameObject go;
+             Vector3 position = Vector3.zero + Vector3.up * 4.0f;
+             position.x = Random.Range(-20.0f, 20.0f);
+             position.z = Random.Range(-5.0f, 5.0f);
+             int totalDice = dice.Count;
+             for (int i = totalDice; i < numberDiceToRoll; ++i)
+             {
+                 go = Instantiate(prefabDie, position, Quaternion.identity);
+                 if (go.GetComponent<Die>())
+                 {
+                     dice.Add(go.GetComponent<Die>());
+                     int idDie = GetUnusedID();
+                     dice[i].Initialize(id, idDie);
+                     dice[i].OnStop += MoveDieOutOfBoard;
+                 }
+                 position.x = Random.Range(-20.0f, 20.0f);
+                 position.z = Random.Range(-5.0f, 5.0f);
+             }
+             numberRoll--;
+             return numberRoll > 0;
+         }
+         return false;
+     }*/
+
+    void InitDice()
+    {
+        GameObject go;
+        Vector3 position = Vector3.zero + Vector3.up * 101.0f;
+        for (int i = 0; i < numberDiceToRoll; ++i)
+        {
+            go = Instantiate(prefabDie, position, Quaternion.identity);
+            if (go.GetComponent<Die>())
+            {
+                dice.Add(go.GetComponent<Die>());
+                dice[i].Initialize(id, i);
+                dice[i].OnStop += MoveDieOutOfBoard;
+            }
+        }
     }
 
     public bool RollDice()
     {
         if (isMyTurn && numberRoll > 0)
         {
-            DeleteNotLockedDice();
-            GameObject go;
+            //DeleteNotLockedDice();
+            //GameObject go;
             Vector3 position = Vector3.zero + Vector3.up * 4.0f;
             position.x = Random.Range(-20.0f, 20.0f);
             position.z = Random.Range(-5.0f, 5.0f);
-            int totalDice = dice.Count;
-            for (int i = totalDice; i < numberDiceToRoll; ++i)
+            for (int i = 0; i < numberDiceToRoll; ++i)
             {
-                go = Instantiate(prefabDie, position, Quaternion.identity);
-                if (go.GetComponent<Die>())
+                if (dice[i] != null && !dice[i].isLocked && !dice[i].isUseToMove && !dice[i].HasBeenUsed)
                 {
-                    dice.Add(go.GetComponent<Die>());
-                    dice[i].Initialize(id, i);
-                    int idDie = i;
-                    dice[i].OnStop += MoveDieOutOfBoard;
+                    dice[i].RollDie(position);
+                    position.x = Random.Range(-20.0f, 20.0f);
+                    position.z = Random.Range(-5.0f, 5.0f);
                 }
-                position.x = Random.Range(-20.0f, 20.0f);
-                position.z = Random.Range(-5.0f, 5.0f);
             }
             numberRoll--;
             return numberRoll > 0;
@@ -95,31 +142,47 @@ public class Character : MonoBehaviour
             if (!dice[i].isLocked && !dice[i].isUseToMove && dice[i] != null && !dice[i].HasBeenUsed)
             {
                 GameObject go = dice[i].gameObject;
+                IDAlreadyUsed[dice[i].id] = false;
                 dice.RemoveAt(i);
                 Destroy(go);
-                numberDieUsed--;
                 i--;
             }
         }
     }
 
+    int GetUnusedID()
+    {
+        int id = 0;
+        for (int i = 0; i < IDAlreadyUsed.Length; ++i)
+        {
+            if (IDAlreadyUsed[i])
+            {
+                id++;
+            }
+            else
+            {
+                IDAlreadyUsed[i] = true;
+                return id;
+            }
+        }
+        return id;
+    }
+
     void DeleteNotUseDice()
     {
+        Vector3 position = Vector3.zero + Vector3.up * 101.0f;
         for (int i = 0; i < dice.Count; ++i)
         {
-            if (!dice[i].isUseForSupply && dice[i] != null)
+            if (dice[i] != null && !dice[i].isUseForSupply)
             {
-                GameObject go = dice[i].gameObject;
-                dice.RemoveAt(i);
-                Destroy(go);
-                i--;
+                dice[i].ResetNoneSupplyDie(position);
             }
         }
     }
 
     void DiceManagement()
     {
-        if (!Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(0))
+        if (!WantToMovePlane && !Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(0))
         {
             RaycastHit hit;
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -130,24 +193,50 @@ public class Character : MonoBehaviour
                 {
                     int index = dice.IndexOf(die);
                     if (indexDieMove == -1)
-                    {                   
+                    {
                         indexDieMove = index;
-                        WantToMove = dice[index].UseForMovement();
+                        WantToMove = dice[index].UseForMovement(false);
                         Debug.Log(WantToMove);
                     }
                     else if (indexDieMove == index)
                     {
                         indexDieMove = -1;
-                        WantToMove = dice[index].UseForMovement();
+                        WantToMove = dice[index].UseForMovement(false);
                         Debug.Log(WantToMove);
                     }
                 }
             }
         }
 
-        if (!WantToMove)
+        if (!WantToMove && !Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(1))
         {
-            if (Input.GetMouseButtonDown(1))
+            RaycastHit hit;
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out hit))
+            {
+                Die die = hit.collider.GetComponent<Die>();
+                if (dice.Contains(die) && die.IsUpperFacePlane())
+                {
+                    int index = dice.IndexOf(die);
+                    if (indexDieMove == -1)
+                    {
+                        indexDieMove = index;
+                        WantToMovePlane = dice[index].UseForMovement(true);
+                        Debug.Log(WantToMovePlane);
+                    }
+                    else if (indexDieMove == index)
+                    {
+                        indexDieMove = -1;
+                        WantToMovePlane = dice[index].UseForMovement(true);
+                        Debug.Log(WantToMovePlane);
+                    }
+                }
+            }
+        }
+
+        if (!WantToMove && !WantToMovePlane)
+        {
+            if (Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(1))
             {
                 RaycastHit hit;
                 Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
@@ -175,11 +264,13 @@ public class Character : MonoBehaviour
                             int index = dice.IndexOf(die);
                             if (!diceUsedOnSupply.Contains(dice[index]))
                             {
+                                dice[index].AddedToListToPossibleSupply(true);
                                 diceUsedOnSupply.Add(dice[index]);
                                 Debug.Log("dé ajouté");
                             }
                             else
                             {
+                                dice[index].AddedToListToPossibleSupply(false);
                                 diceUsedOnSupply.Remove(dice[index]);
                             }
                         }
@@ -189,7 +280,14 @@ public class Character : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Return))
             {
-                board.rooms[IDCurrentRoom].LockDiceForSupply(diceUsedOnSupply);
+                if (board.rooms[IDCurrentRoom].isHold)
+                {
+                    board.rooms[IDCurrentRoom].LockDieForHold(diceUsedOnSupply);
+                }
+                else
+                {
+                    board.rooms[IDCurrentRoom].LockDiceForSupply(diceUsedOnSupply);
+                }
                 diceUsedOnSupply.Clear();
             }
         }
@@ -201,18 +299,31 @@ public class Character : MonoBehaviour
         {
             transform.position = _position;
             WantToMove = false;
-            dice[indexDieMove].HasBeenUsed = true;
             dice[indexDieMove].gameObject.layer = 2;
             dice[indexDieMove].ReturnDieToOwner();
+            IDAlreadyUsed[dice[indexDieMove].id] = false;
             indexDieMove = -1;
             IDCurrentRoom = _idRoom;
         }
     }
 
+    public void DeleteDiceUsedToMovePlane()
+    {
+        if (WantToMovePlane)
+        {
+            WantToMovePlane = false;
+            dice[indexDieMove].gameObject.layer = 2;
+            dice[indexDieMove].ReturnDieToOwner();
+            IDAlreadyUsed[dice[indexDieMove].id] = false;
+            indexDieMove = -1;
+        }
+    }
+
+    // public void MovePlane()
+
     void MoveDieOutOfBoard(int _idDie)
     {
-        dice[_idDie].MoveDice(usedDiePositions[numberDieUsed].position, false);
-        numberDieUsed++;
+        dice[_idDie].MoveDice(usedDiePositions[_idDie].position, false);
     }
 
     public void EndTurn()
@@ -220,9 +331,10 @@ public class Character : MonoBehaviour
         if (isMyTurn)
         {
             isMyTurn = false;
+            WantToMove = false;
+            WantToMovePlane = false;
             DeleteNotUseDice();
             numberRoll = 3;
-            numberDieUsed = 0;
             diceUsedOnSupply.Clear();
         }
     }

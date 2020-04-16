@@ -7626,9 +7626,10 @@ MonoBehaviour:
   - {fileID: 962132944}
   - {fileID: 1836228011}
   - {fileID: 442385484}
-  timePerRound: 150
+  timePerRound: 5000
   holdRoomID: 0
   timerRound: 0
+  planeCity: 0
 --- !u!4 &1007571596 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3237461632725889409, guid: 61a3ba95509ff4145ad53f769bd3af43,
@@ -7796,7 +7797,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 26
+  m_RootOrder: 27
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1050540396
 GameObject:
@@ -13547,7 +13548,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: EndTurn
+  m_Text: player
 --- !u!222 &1898433499
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -16495,6 +16496,11 @@ PrefabInstance:
       propertyPath: positionDices.Array.data[0]
       value: 
       objectReference: {fileID: 342906667}
+    - target: {fileID: 1076842398036068063, guid: 50aa96553cbab744f9485a668cbbe565,
+        type: 3}
+      propertyPath: typeSupply
+      value: 5
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 50aa96553cbab744f9485a668cbbe565, type: 3}
 --- !u!1001 &1373598236874523466
@@ -16671,7 +16677,7 @@ PrefabInstance:
     - target: {fileID: 2788775762988049630, guid: f87db8fa658149e4f86c91a72650c4f1,
         type: 3}
       propertyPath: m_RootOrder
-      value: 27
+      value: 26
       objectReference: {fileID: 0}
     - target: {fileID: 2788775762988049630, guid: f87db8fa658149e4f86c91a72650c4f1,
         type: 3}

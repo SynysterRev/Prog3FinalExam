@@ -32,13 +32,17 @@ public class BoardGame : MonoBehaviour
     CityInfo[] cities;
     List<Card> cardsDeck;
     List<Card> citiesToSave;
+    List<Card> currentCitiesToSave;
     GameObject[] coinTime;
     GameObject plane;
     Character[] players;
 
+    CityInfo cityPlane;
+
+    public float timerRound;
+    public int planeCity;
     int numberPlayers = 2;
     int numberCitiesToSave = 5;
-    public float timerRound;
     int numberCoinTimerLeft;
     int idCharacterTurn;
     bool isGamePaused;
@@ -100,17 +104,26 @@ public class BoardGame : MonoBehaviour
         cities = CitiesDataBase.Cities;
         int randomStartCity = Random.Range(0, cardsDeck.Count);
         plane = Instantiate(prefabPlane, citiesPosition[randomStartCity].position, citiesPosition[randomStartCity].rotation);
-
+        planeCity = randomStartCity;
+        cityPlane = cities[randomStartCity];
         citiesToSave = new List<Card>();
+        currentCitiesToSave = new List<Card>();
         int[] randomCities = new int[numberCitiesToSave];
         Card city;
         //take 5 random city and remove them from the deck
         for (int i = 0; i < numberCitiesToSave; ++i)
         {
             randomCities[i] = Random.Range(0, cardsDeck.Count);
-            city = cardsDeck[randomCities[i]];
-            cardsDeck.Remove(city);
-            citiesToSave.Add(city);
+            if (randomCities[i] != randomStartCity)
+            {
+                city = cardsDeck[randomCities[i]];
+                cardsDeck.Remove(city);
+                citiesToSave.Add(city);
+            }
+            else
+            {
+                i--;
+            }
         }
         //destroy the deck we don't need it anymore
         for (int i = 0; i < cardsDeck.Count; ++i)
@@ -123,11 +136,13 @@ public class BoardGame : MonoBehaviour
         {
             citiesToSave[i].transform.position = cardsCitiesPosition[citiesToSave[i].IDCard].position;
             citiesToSave[i].transform.rotation = cardsCitiesPosition[citiesToSave[i].IDCard].rotation;
+            currentCitiesToSave.Add(citiesToSave[i]);
+            citiesToSave.RemoveAt(i);
         }
 
         //put the 3 others in the draw pile
         Vector3 position = pileOfCards.position;
-        for (int i = 2; i < 5; ++i)
+        for (int i = 0; i < 3; ++i)
         {
             citiesToSave[i].transform.position = position;
             position.y += 0.2f;
@@ -170,9 +185,42 @@ public class BoardGame : MonoBehaviour
         }
     }
 
+    void GetOneCoinTime()
+    {
+        coinTime[numberCoinTimerLeft] = Instantiate(coinTimePrefab, timeCoinPositions[numberCoinTimerLeft].position, Quaternion.identity);
+        numberCoinTimerLeft++;
+    }
+
+    void DeleteSavedCityAndAddNewOne()
+    {
+        for (int i = 0; i < currentCitiesToSave.Count; ++i)
+        {
+            if (currentCitiesToSave[i].cityInfo.CityName == cityPlane.CityName)
+            {
+                GameObject go = currentCitiesToSave[i].gameObject;
+                currentCitiesToSave.RemoveAt(i);
+                Destroy(go);
+            }
+        }
+        citiesToSave[0].transform.position = cardsCitiesPosition[citiesToSave[0].IDCard].position;
+        citiesToSave[0].transform.rotation = cardsCitiesPosition[citiesToSave[0].IDCard].rotation;
+        currentCitiesToSave.Add(citiesToSave[0]);
+        citiesToSave.RemoveAt(0);
+    }
+
     public ColorCharacter GetCharacterColor()
     {
         return players[idCharacterTurn].ColorCharact;
+    }
+
+    bool CheckIfPlaneIsOnCityToSave()
+    {
+        for (int i = 0; i < currentCitiesToSave.Count; ++i)
+        {
+            if (currentCitiesToSave[i].cityInfo.CityName == cityPlane.CityName)
+                return true;
+        }
+        return false;
     }
 
     // Update is called once per frame
@@ -187,19 +235,50 @@ public class BoardGame : MonoBehaviour
                 if (Physics.Raycast(ray, out hit))
                 {
                     Room room = hit.collider.GetComponent<Room>();
-                    if(room && room.IsRoomNeighbour(players[idCharacterTurn].IDCurrentRoom)&& players[idCharacterTurn].IDCurrentRoom != room.idRoom)
+                    if (room && room.IsRoomNeighbour(players[idCharacterTurn].IDCurrentRoom) && players[idCharacterTurn].IDCurrentRoom != room.idRoom)
                     {
                         players[idCharacterTurn].MovePlayer(room.positionPlayer[idCharacterTurn].position, room.idRoom);
                     }
                 }
             }
 
+            if (Input.GetKeyDown(KeyCode.LeftArrow) && players[idCharacterTurn].WantToMovePlane)
+            {
+                if (planeCity == 0) planeCity = citiesPosition.Length - 1;
+                else planeCity--;
+                plane.transform.position = citiesPosition[planeCity].position;
+                plane.transform.rotation = citiesPosition[planeCity].rotation;
+                cityPlane = cities[planeCity];
+                players[idCharacterTurn].DeleteDiceUsedToMovePlane();
+            }
+
+            if (Input.GetKeyDown(KeyCode.RightArrow) && players[idCharacterTurn].WantToMovePlane)
+            {
+                if (planeCity == citiesPosition.Length - 1) planeCity = 0;
+                else planeCity++;
+                plane.transform.position = citiesPosition[planeCity].position;
+                plane.transform.rotation = citiesPosition[planeCity].rotation;
+                cityPlane = cities[planeCity];
+                players[idCharacterTurn].DeleteDiceUsedToMovePlane();
+            }
+
             if (Input.GetKeyDown(KeyCode.B))
             {
-                List<Supply> supplies = rooms[players[idCharacterTurn].IDCurrentRoom].TransfertSuppliesToHold();
-                rooms[holdRoomID].AddSuppliesToHold(supplies);
+                if (!rooms[players[idCharacterTurn].IDCurrentRoom].isHold)
+                {
+                    List<Supply> supplies = rooms[players[idCharacterTurn].IDCurrentRoom].TransfertSuppliesToHold();
+                    rooms[holdRoomID].AddSuppliesToHold(supplies);
+                }
+                else if (rooms[players[idCharacterTurn].IDCurrentRoom].isHold && CheckIfPlaneIsOnCityToSave() && rooms[players[idCharacterTurn].IDCurrentRoom].IsDieLockHold())
+                {
+                    if (rooms[players[idCharacterTurn].IDCurrentRoom].DeliverSupplies(cityPlane.RessourcesNeeded))
+                    {
+                        GetOneCoinTime();
+                        DeleteSavedCityAndAddNewOne();
+                    }
+                }
             }
-            timerRound = Mathf.Clamp(timerRound - Time.deltaTime, 0.0f, 120.0f);
+            timerRound = Mathf.Clamp(timerRound - Time.deltaTime, 0.0f, timePerRound);
             if (timerRound <= 0.0f)
             {
                 if (numberCoinTimerLeft > 0)
