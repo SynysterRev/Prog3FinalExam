@@ -7741,7 +7741,7 @@ MonoBehaviour:
   - {fileID: 962132944}
   - {fileID: 1836228011}
   - {fileID: 442385484}
-  timePerRound: 50000
+  timePerRound: 120
   holdRoomID: 0
   HiddenCard: {fileID: 888515803225761316, guid: 71bee68cb4f63ad46a5a69343760a11f,
     type: 3}
@@ -16891,11 +16891,6 @@ PrefabInstance:
       propertyPath: positionDices.Array.data[0]
       value: 
       objectReference: {fileID: 342906667}
-    - target: {fileID: 1076842398036068063, guid: 50aa96553cbab744f9485a668cbbe565,
-        type: 3}
-      propertyPath: typeSupply
-      value: 5
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 50aa96553cbab744f9485a668cbbe565, type: 3}
 --- !u!1001 &1373598236874523466
@@ -17706,10 +17701,9 @@ PrefabInstance:
       objectReference: {fileID: 98856957}
     - target: {fileID: 7076471627975086226, guid: a05b234b543b92545ad10cc008959c08,
         type: 3}
-      propertyPath: supplyPrefab
-      value: 
-      objectReference: {fileID: 572629823546675533, guid: 06c77d1072e553b4181eeb4999574d75,
-        type: 3}
+      propertyPath: numberWaste
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7076471627975086231, guid: a05b234b543b92545ad10cc008959c08,
         type: 3}
       propertyPath: m_Name

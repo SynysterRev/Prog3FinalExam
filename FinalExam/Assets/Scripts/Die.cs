@@ -17,6 +17,9 @@ public class Die : MonoBehaviour
     public delegate void DelegateIsStop(int _id);
     public event DelegateIsStop OnStop;
 
+    public delegate void DelegateSTopWaste(bool _isTrash, Die _die);
+    public event DelegateSTopWaste OnStopForWaste;
+
 
     int idCharacter;
     [SerializeField] Face[] faces = new Face[6];
@@ -61,6 +64,7 @@ public class Die : MonoBehaviour
     public void RollDie(Vector3 _position)
     {
         ResetNoneSupplyDie(_position);
+        transform.localScale = Vector3.one;
         gameObject.layer = 2;
         rgbd.isKinematic = false;
         int x = Random.Range(0, 11) % 2 == 0 ? 1 : -1;
@@ -73,6 +77,12 @@ public class Die : MonoBehaviour
     void Start()
     {
 
+    }
+    public Ressources GetUpperFaceSupply()
+    {
+        if (upperFace != null)
+            return upperFace.typeSupplieFace;
+        return Ressources.none;
     }
 
     // Update is called once per frame
@@ -189,6 +199,8 @@ public class Die : MonoBehaviour
             rgbd.isKinematic = true;
             CanCheckFace = false;
             OnStop(id);
+            if (isUseForSupply)
+                OnStopForWaste(upperFace.isTrash, this);
         }
         // Debug.Log(upperFace.typeSupplieFace);
     }
@@ -274,9 +286,21 @@ public class Die : MonoBehaviour
             {
                 outlineCube.SetActive(false);
                 // outlineToChange.SetFloat("_Thickness", 0.0f);
+                HasBeenUsed = true;
                 isUseForSupply = true;
                 isLocked = true;
             }
+        }
+    }
+
+    public void LockForSupplyWaste()
+    {
+        if (!HasBeenUsed)
+        {
+            outlineCube.SetActive(false);
+            // outlineToChange.SetFloat("_Thickness", 0.0f);
+            isUseForSupply = true;
+            isLocked = true;
         }
     }
 

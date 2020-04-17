@@ -17,6 +17,9 @@ public class BoardGame : MonoBehaviour
     public event DelegateEndGame OnGameOver;
     public event DelegateEndGame OnGameWin;
 
+    public delegate void DelegatePlayer();
+    public event DelegatePlayer OnNoMoreDice;
+
     [SerializeField] public Room[] rooms;
     [SerializeField] Transform[] citiesPosition;
     [SerializeField] GameObject prefabPlane;
@@ -73,6 +76,12 @@ public class BoardGame : MonoBehaviour
         }
         isGamePaused = false;
         timeUp = false;
+        for (int i = 0; i < rooms.Length; ++i)
+        {
+            rooms[i].OnLaunch += PauseGame;
+            rooms[i].OnStopLaunch += StopPauseGame;
+            rooms[i].OnWasteMax += OnWasteMax;
+        }
     }
 
     void CreatePlayer()
@@ -90,11 +99,31 @@ public class BoardGame : MonoBehaviour
                 players[i] = go.GetComponent<Character>();
                 //spawn character at the correct place
                 players[i].Initialize(rooms[players[i].idRoomSpawn].positionPlayer[i].position, this, i, UsedDiePositions);
+                players[i].OnWantToMove += DisplayHelpMovementPlayer;
+                players[i].OnWantToMoveStop += StopDisplayHelpMovementPlayer;
+                players[i].OnNoMoreDice += NoMoreDice;
             }
             prefabPlayer.RemoveAt(randomCharacter[i]);
         }
         idCharacterTurn = numberPlayers - 1;
         players[idCharacterTurn].ActivateTurn();
+    }
+
+    void NoMoreDice()
+    {
+        OnNoMoreDice();
+    }
+
+    void PauseGame()
+    {
+        isGamePaused = true;
+        OnPauseGame();
+    }
+
+    void StopPauseGame()
+    {
+        isGamePaused = false;
+        OnEndPauseGame();
     }
 
     void CreateCardDeck()
@@ -182,6 +211,28 @@ public class BoardGame : MonoBehaviour
         InitializeBoard();
     }
 
+    void DisplayHelpMovementPlayer()
+    {
+        if (players[idCharacterTurn].WantToMove)
+        {
+            for (int i = 0; i < rooms[players[idCharacterTurn].IDCurrentRoom].IDNeighbourRoom.Length; ++i)
+            {
+                rooms[rooms[players[idCharacterTurn].IDCurrentRoom].IDNeighbourRoom[i]].ActivateOutline(true);
+            }
+        }
+    }
+
+    void StopDisplayHelpMovementPlayer()
+    {
+        if (!players[idCharacterTurn].WantToMove)
+        {
+            for (int i = 0; i < rooms[players[idCharacterTurn].IDCurrentRoom].IDNeighbourRoom.Length; ++i)
+            {
+                rooms[rooms[players[idCharacterTurn].IDCurrentRoom].IDNeighbourRoom[i]].ActivateOutline(false);
+            }
+        }
+    }
+
     public void UseCoinTime()
     {
         if (timeUp)
@@ -250,9 +301,21 @@ public class BoardGame : MonoBehaviour
         SceneManager.LoadScene("GameScene");
     }
 
+    void OnWasteMax()
+    {
+        timeUp = true;
+        isGameOver = true;
+        OnGameOver();
+    }
+
     // Update is called once per frame
     void Update()
     {
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            Application.Quit();
+        }
+
         if (lerpNeeded)
         {
             timer += Time.deltaTime;
@@ -304,7 +367,7 @@ public class BoardGame : MonoBehaviour
                 else planeCity++;
                 lerpNeeded = true;
                 nextPosition = citiesPosition[planeCity].position;
-               // plane.transform.position = citiesPosition[planeCity].position;
+                // plane.transform.position = citiesPosition[planeCity].position;
                 plane.transform.rotation = citiesPosition[planeCity].rotation;
                 cityPlane = cities[planeCity];
                 players[idCharacterTurn].DeleteDiceUsedToMovePlane();
@@ -312,10 +375,9 @@ public class BoardGame : MonoBehaviour
 
             if (Input.GetKeyDown(KeyCode.Return) && !players[idCharacterTurn].IsDieInSupplyList())
             {
-                if (!rooms[players[idCharacterTurn].IDCurrentRoom].isHold)
+                if(rooms[players[idCharacterTurn].IDCurrentRoom].isWaste)
                 {
-                    List<Supply> supplies = rooms[players[idCharacterTurn].IDCurrentRoom].TransfertSuppliesToHold();
-                    rooms[holdRoomID].AddSuppliesToHold(supplies);
+                    rooms[players[idCharacterTurn].IDCurrentRoom].UseSupplyOnWaste();
                 }
                 else if (rooms[players[idCharacterTurn].IDCurrentRoom].isHold && CheckIfPlaneIsOnCityToSave() && rooms[players[idCharacterTurn].IDCurrentRoom].IsDieLockHold())
                 {
@@ -323,6 +385,14 @@ public class BoardGame : MonoBehaviour
                     {
                         GetOneCoinTime();
                         DeleteSavedCityAndAddNewOne();
+                    }
+                }
+                else 
+                {
+                    if (rooms[holdRoomID].HasEnoughSpaceInHold())
+                    {
+                        List<Supply> supplies = rooms[players[idCharacterTurn].IDCurrentRoom].TransfertSuppliesToHold();
+                        rooms[holdRoomID].AddSuppliesToHold(supplies);
                     }
                 }
             }

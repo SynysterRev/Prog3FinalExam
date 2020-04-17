@@ -31,6 +31,8 @@ public class HUD : MonoBehaviour
         board.OnGameOver += OnGameOver;
         board.OnGameWin += OnGameWin;
 
+        board.OnNoMoreDice += NoMoreDice;
+
         coinTime.interactable = false;
         canRollDice = true;
         playerTurn.text = board.GetCharacterColor().ToString() + " player";
@@ -81,6 +83,11 @@ public class HUD : MonoBehaviour
                     break;
             }
         }
+    }
+
+    void NoMoreDice()
+    {
+        rollDice.interactable = false;
     }
 
     public void RestartGame()

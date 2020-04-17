@@ -6,8 +6,18 @@ using UnityEngine;
 [System.Serializable]
 public class Room : MonoBehaviour
 {
+    public delegate void DelegateIsLaunchingDieWaste();
+    public event DelegateIsLaunchingDieWaste OnLaunch;
+    public event DelegateIsLaunchingDieWaste OnStopLaunch;
+
+    public delegate void DelegateWasteMaxReach();
+    public event DelegateWasteMaxReach OnWasteMax;
+
     [SerializeField] GameObject supplyPrefab;
-    [SerializeField] Room holdRoom;
+    [SerializeField] GameObject outlineHelp;
+    [SerializeField] Shader shader;
+    [SerializeField] int idRoomWaste;
+    Material outlineToChange;
     public int idRoom;
     public string nameRoom;
     public Ressources typeSupply;
@@ -21,17 +31,32 @@ public class Room : MonoBehaviour
     public int numberWaste;
     public Supply[] supplies;
 
+    List<Die> DieStop = new List<Die>();
+
+    int numberWasteTmp;
+
     //"normal room"
     int numberSuppliesTransferable;
     int numberSuppliesLeft;
-    int numberDieLocked;
+    public int numberDieLocked;
 
     //"hold room"
     public bool isHold;
     public Supply[] ressourcesHold;
     int numberRessourcesHold;
 
+    //wasteRoom
+    bool launchDice;
+    int numberDieStop;
+    int numberWastePossiblyDelete;
     GameObject wasteCoin;
+
+    bool lerpNeeded;
+    Vector3 nextPosition;
+    float timer;
+
+    BoardGame board;
+
     BoxCollider boxCollider;
 
     private void Start()
@@ -61,6 +86,11 @@ public class Room : MonoBehaviour
         {
             ressourcesHold = new Supply[9];
         }
+        outlineToChange = outlineHelp.GetComponent<Renderer>().sharedMaterial = new Material(shader);
+        outlineToChange.SetFloat("_Thickness", 6.0f);
+        outlineToChange.SetColor("_Color", Color.green);
+        outlineHelp.SetActive(false);
+        board = FindObjectOfType<BoardGame>();
     }
 
     public bool HasEnoughRessources(int _numberOfRessources)
@@ -86,8 +116,14 @@ public class Room : MonoBehaviour
         return enoughRessources;
     }
 
+    public void ActivateOutline(bool _activate)
+    {
+        outlineHelp.SetActive(_activate);
+    }
+
     public void LockDiceForSupply(List<Die> _dieList)
     {
+        if (_dieList.Count == 0) return;
         int totalRessources = _dieList.Count;
         int totalRessourcesUsed = 0;
         for (int i = 0; i < RessourcesRequired.Length; ++i)
@@ -107,6 +143,7 @@ public class Room : MonoBehaviour
                         lockedDice[numberDieLocked] = _dieList[j];
                         _dieList[j].LockForSupply(typeSupply);
                         _dieList[j].MoveDice(positionDices[numberDieLocked].position, true);
+                        _dieList[j].OnStopForWaste += StopWaste;
                         numberDieLocked++;
                         totalRessourcesUsed++;
                     }
@@ -117,6 +154,51 @@ public class Room : MonoBehaviour
                 else
                 {
                     return;
+                }
+            }
+        }
+    }
+
+    public void LockDieForWaste(List<Die> _dieList)
+    {
+        if (isWaste)
+        {
+            if (_dieList.Count == 0) return;
+            Debug.Log(_dieList.Count);
+            int totalRessources = _dieList.Count;
+            int totalRessourcesUsed = 0;
+            for (int i = 0; i < RessourcesRequired.Length; ++i)
+            {
+                if (!RessourcesRequired[i].isCompleted)
+                {
+                    if (totalRessources >= RessourcesRequired[i].numberRessourcesRequired)
+                    {
+                        totalRessources -= RessourcesRequired[i].numberRessourcesRequired;
+                        int max = totalRessourcesUsed + RessourcesRequired[i].numberRessourcesRequired;
+                        //die lock will ignore raycast and move it to the correct place
+                        //also add die to our lockdice list to remember which die we have
+                        for (int j = totalRessourcesUsed; j < max; ++j)
+                        {
+                            _dieList[j].gameObject.layer = 2;
+                            lockedDice[numberDieLocked] = _dieList[j];
+                            _dieList[j].LockForSupplyWaste();
+                            _dieList[j].MoveDice(positionDices[numberDieLocked].position, true);
+                            numberDieLocked++;
+                            totalRessourcesUsed++;
+                        }
+                        //if section is complete then we can use it to get supply
+                        RessourcesRequired[i].isCompleted = true;
+                        numberWastePossiblyDelete = RessourcesRequired[i].numberRessourcesReward;
+                    }
+                    else
+                    {
+                        return;
+                    }
+
+                    /*  else
+                      {
+                          return;
+                      }*/
                 }
             }
         }
@@ -171,8 +253,12 @@ public class Room : MonoBehaviour
             {
                 lockedDice[i].ReturnDieToOwner();
                 lockedDice[i] = null;
-                numberDieLocked = 0;
             }
+            for (int i = 0; i < RessourcesRequired.Length; ++i)
+            {
+                RessourcesRequired[i].isCompleted = false;
+            }
+            numberDieLocked = 0;
             return null;
         }
         List<Supply> suppliesList = new List<Supply>();
@@ -185,12 +271,13 @@ public class Room : MonoBehaviour
                 numberSuppliesTransferable--;
                 numberSuppliesLeft--;
             }
-            for (int i = 0; i < numberDieLocked; ++i)
+            RollDiceForWaste();
+            /*for (int i = 0; i < numberDieLocked; ++i)
             {
                 lockedDice[i].ReturnDieToOwner();
                 lockedDice[i] = null;
-            }
-            numberDieLocked = 0;
+            }*/
+            //numberDieLocked = 0;
             for (int i = 0; i < RessourcesRequired.Length; ++i)
             {
                 RessourcesRequired[i].isCompleted = false;
@@ -199,21 +286,56 @@ public class Room : MonoBehaviour
         return suppliesList;
     }
 
+    void RollDiceForWaste()
+    {
+        OnLaunch();
+        launchDice = true;
+        Vector3 position = Vector3.zero + Vector3.up * 4.0f;
+        position.x = Random.Range(-20.0f, 20.0f);
+        position.z = Random.Range(-5.0f, 5.0f);
+        for (int i = 0; i < numberDieLocked; ++i)
+        {
+            lockedDice[i].RollDie(position);
+            position.x = Random.Range(-20.0f, 20.0f);
+            position.z = Random.Range(-5.0f, 5.0f);
+        }
+    }
+
+    void StopWaste(bool _isTrash, Die _die)
+    {
+        if (!DieStop.Contains(_die))
+        {
+            if (_isTrash)
+                numberWasteTmp++;
+            numberDieStop++;
+            DieStop.Add(_die);
+        }
+    }
+
     public void AddSuppliesToHold(List<Supply> suppliesList)
     {
         if (suppliesList == null) return;
-        if (isHold)
+        if (isHold && numberRessourcesHold < 9)
         {
             for (int i = 0; i < suppliesList.Count; ++i)
             {
-                if (numberRessourcesHold < 9)
+                for (int j = 0; j < ressourcesHold.Length; ++j)
                 {
-                    ressourcesHold[numberRessourcesHold] = suppliesList[i];
-                    suppliesList[i].MoveSupply(positionRessources[numberRessourcesHold].position, true, false);
-                    numberRessourcesHold++;
+                    if (ressourcesHold[j] == null)
+                    {
+                        ressourcesHold[j] = suppliesList[i];
+                        suppliesList[i].MoveSupply(positionRessources[j].position, true, false);
+                        numberRessourcesHold++;
+                        break;
+                    }
                 }
             }
         }
+    }
+
+    public bool HasEnoughSpaceInHold()
+    {
+        return numberRessourcesHold < 9;
     }
 
     public bool DeliverSupplies(Ressources[] _suppliesNeeded)
@@ -249,6 +371,7 @@ public class Room : MonoBehaviour
             {
                 ressourcesHold[idSupply[i]].MoveSupply(Vector3.zero, false, true);
                 ressourcesHold[idSupply[i]] = null;
+                numberRessourcesHold--;
             }
             for (int i = 0; i < numberDieLocked; ++i)
             {
@@ -259,6 +382,21 @@ public class Room : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    public void UseSupplyOnWaste()
+    {
+        MoveCoinWaste(numberWastePossiblyDelete);
+        for (int i = 0; i < numberDieLocked; ++i)
+        {
+            lockedDice[i].ReturnDieToOwner();
+            lockedDice[i] = null;
+        }
+        numberDieLocked = 0;
+        for (int i = 0; i < RessourcesRequired.Length; ++i)
+        {
+            RessourcesRequired[i].isCompleted = false;
+        }
     }
 
     public void AddDieLock(Die _lockedDie)
@@ -290,9 +428,59 @@ public class Room : MonoBehaviour
         return false;
     }
 
+    void MoveCoinWaste(int _number)
+    {
+        if (isWaste)
+        {
+            lerpNeeded = true;
+            numberWaste = Mathf.Clamp(numberWaste + _number, 0, positionRessources.Length - 1);
+            nextPosition = positionRessources[numberWaste].position;
+            // wasteCoin.transform.position = positionRessources[numberWaste].position;
+            /*  if (numberWaste == positionRessources.Length - 1)
+              {
+                  OnWasteMax();
+              }*/
+        }
+    }
+
     private void Update()
     {
 
+        if (lerpNeeded && isWaste)
+        {
+            timer += Time.deltaTime * 5.0f;
+            wasteCoin.transform.position = Vector3.Lerp(wasteCoin.transform.position, nextPosition, timer);
+            if (timer >= 1.0f)
+            {
+                lerpNeeded = false;
+                timer = 0.0f;
+                if (numberWaste == positionRessources.Length - 1)
+                {
+                    OnWasteMax();
+                }
+            }
+        }
+
+
+        if (launchDice)
+        {
+            if (numberDieStop == numberDieLocked)
+            {
+                launchDice = false;
+                board.rooms[idRoomWaste].MoveCoinWaste(numberWasteTmp);
+                numberWasteTmp = 0;
+                numberDieStop = 0;
+                DieStop.Clear();
+                OnStopLaunch();
+                for (int i = 0; i < numberDieLocked; ++i)
+                {
+                    lockedDice[i].OnStopForWaste -= StopWaste;
+                    lockedDice[i].ReturnDieToOwner();
+                    lockedDice[i] = null;
+                }
+                numberDieLocked = 0;
+            }
+        }
     }
 }
 

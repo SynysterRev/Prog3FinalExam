@@ -20,6 +20,13 @@ public enum ColorCharacter
 
 public class Character : MonoBehaviour
 {
+    public delegate void DelegateMovement();
+    public event DelegateMovement OnWantToMove;
+    public event DelegateMovement OnWantToMoveStop;
+
+    public delegate void DelegateDice();
+    public event DelegateDice OnNoMoreDice;
+
     [SerializeField] GameObject prefabDie;
     List<Die> dice = new List<Die>();
     List<Die> diceUsedOnSupply = new List<Die>();
@@ -167,6 +174,20 @@ public class Character : MonoBehaviour
         }
     }
 
+    public void CheckIfStillHasDice()
+    {
+        int cpt = 0;
+        for (int i = 0; i < dice.Count; ++i)
+        {
+            if (dice[i] != null && !dice[i].HasBeenUsed)
+            {
+                cpt++;
+            }
+        }
+        if (cpt == 0)
+            OnNoMoreDice();
+    }
+
     void DiceManagement()
     {
         if (!WantToMovePlane && !Input.GetKey(KeyCode.LeftControl) && Input.GetMouseButtonDown(0))
@@ -188,13 +209,13 @@ public class Character : MonoBehaviour
                             diceUsedOnSupply.Remove(dice[index]);
                         }
                         WantToMove = dice[index].UseForMovement(false);
-                            Debug.Log(WantToMove);
+                        OnWantToMove();
                     }
                     else if (indexDieMove == index)
                     {
                         indexDieMove = -1;
                         WantToMove = dice[index].UseForMovement(false);
-                        Debug.Log(WantToMove);
+                        OnWantToMoveStop();
                     }
                 }
             }
@@ -219,13 +240,11 @@ public class Character : MonoBehaviour
                             diceUsedOnSupply.Remove(dice[index]);
                         }
                         WantToMovePlane = dice[index].UseForMovement(true);
-                        Debug.Log(WantToMovePlane);
                     }
                     else if (indexDieMove == index)
                     {
                         indexDieMove = -1;
                         WantToMovePlane = dice[index].UseForMovement(true);
-                        Debug.Log(WantToMovePlane);
                     }
                 }
             }
@@ -256,19 +275,26 @@ public class Character : MonoBehaviour
                     Die die = hit.collider.GetComponent<Die>();
                     if (dice.Contains(die))
                     {
-                        if (die.IsCorrectSupply(board.rooms[IDCurrentRoom].typeSupply))
+                        if (board.rooms[IDCurrentRoom].isWaste)
                         {
-                            int index = dice.IndexOf(die);
-                            if (!diceUsedOnSupply.Contains(dice[index]))
+                            SupplyForWaste(die);
+                        }
+                        else
+                        {
+                            if (die.IsCorrectSupply(board.rooms[IDCurrentRoom].typeSupply))
                             {
-                                dice[index].AddedToListToPossibleSupply(true);
-                                diceUsedOnSupply.Add(dice[index]);
-                                Debug.Log("dé ajouté");
-                            }
-                            else
-                            {
-                                dice[index].AddedToListToPossibleSupply(false);
-                                diceUsedOnSupply.Remove(dice[index]);
+                                int index = dice.IndexOf(die);
+                                if (!diceUsedOnSupply.Contains(dice[index]))
+                                {
+                                    dice[index].AddedToListToPossibleSupply(true);
+                                    diceUsedOnSupply.Add(dice[index]);
+                                    Debug.Log("dé ajouté");
+                                }
+                                else
+                                {
+                                    dice[index].AddedToListToPossibleSupply(false);
+                                    diceUsedOnSupply.Remove(dice[index]);
+                                }
                             }
                         }
                     }
@@ -281,13 +307,51 @@ public class Character : MonoBehaviour
                 {
                     board.rooms[IDCurrentRoom].LockDieForHold(diceUsedOnSupply);
                 }
+                else if (board.rooms[IDCurrentRoom].isWaste)
+                {
+                    board.rooms[IDCurrentRoom].LockDieForWaste(diceUsedOnSupply);
+                }
                 else
                 {
                     board.rooms[IDCurrentRoom].LockDiceForSupply(diceUsedOnSupply);
                 }
+                for (int i = 0; i < diceUsedOnSupply.Count; ++i)
+                {
+                    diceUsedOnSupply[i].AddedToListToPossibleSupply(false);
+                }
+                CheckIfStillHasDice();
                 diceUsedOnSupply.Clear();
             }
         }
+    }
+
+    void SupplyForWaste(Die _die)
+    {
+        if (!diceUsedOnSupply.Contains(_die))
+        {
+            for (int i = 0; i < diceUsedOnSupply.Count; ++i)
+            {
+                if (_die.GetUpperFaceSupply() == diceUsedOnSupply[i].GetUpperFaceSupply())
+                {
+                    return;
+                }
+            }
+            for (int i = 0; i < board.rooms[IDCurrentRoom].numberDieLocked; ++i)
+            {
+                if (board.rooms[IDCurrentRoom].lockedDice[i] != null && _die.GetUpperFaceSupply() == board.rooms[IDCurrentRoom].lockedDice[i].GetUpperFaceSupply())
+                {
+                    return;
+                }
+            }
+            _die.AddedToListToPossibleSupply(true);
+            diceUsedOnSupply.Add(_die);
+        }
+        else
+        {
+            _die.AddedToListToPossibleSupply(false);
+            diceUsedOnSupply.Remove(_die);
+        }
+
     }
 
     public bool IsDieInSupplyList()
@@ -302,11 +366,13 @@ public class Character : MonoBehaviour
             lerpNeeded = true;
             //transform.position = _position;
             WantToMove = false;
+            OnWantToMoveStop();
             dice[indexDieMove].gameObject.layer = 2;
             dice[indexDieMove].ReturnDieToOwner();
             IDAlreadyUsed[dice[indexDieMove].id] = false;
             indexDieMove = -1;
             IDCurrentRoom = _idRoom;
+            CheckIfStillHasDice();
         }
     }
 
@@ -319,12 +385,14 @@ public class Character : MonoBehaviour
             dice[indexDieMove].ReturnDieToOwner();
             IDAlreadyUsed[dice[indexDieMove].id] = false;
             indexDieMove = -1;
+            CheckIfStillHasDice();
         }
     }
 
     void MoveDieOutOfBoard(int _idDie)
     {
-        dice[_idDie].MoveDice(usedDiePositions[_idDie].position, false);
+        if (!dice[_idDie].isUseForSupply)
+            dice[_idDie].MoveDice(usedDiePositions[_idDie].position, false);
     }
 
     public void EndTurn()
@@ -334,8 +402,10 @@ public class Character : MonoBehaviour
             isMyTurn = false;
             WantToMove = false;
             WantToMovePlane = false;
+            indexDieMove = -1;
             DeleteNotUseDice();
             numberRoll = 3;
+            OnWantToMoveStop();
             diceUsedOnSupply.Clear();
         }
     }
@@ -346,6 +416,7 @@ public class Character : MonoBehaviour
         {
             isMyTurn = true;
             DeleteNotUseDice();
+            CheckIfStillHasDice();
         }
     }
 
@@ -357,7 +428,7 @@ public class Character : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(lerpNeeded)
+        if (lerpNeeded)
         {
             timer += Time.deltaTime * 5.0f;
             transform.position = Vector3.Lerp(transform.position, nextPosition, timer);
